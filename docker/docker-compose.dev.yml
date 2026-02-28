@@ -1,0 +1,27 @@
+# Dev overrides: backend hot-reload + exposed ports for local tooling.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up
+#
+# The frontend is intentionally excluded here — run `npm run dev` locally
+# instead for Vite HMR. The Vite dev server proxies /api to localhost:8000.
+
+services:
+  mongodb:
+    ports:
+      - "27017:27017"
+
+  backend:
+    build:
+      target: dev
+    volumes:
+      - ../backend:/app
+      # .venv is at /opt/venv in the dev image (UV_PROJECT_ENVIRONMENT),
+      # so mounting /app doesn't clobber installed packages.
+    ports:
+      - "8000:8000"
+
+  frontend:
+    # Not started in dev — use `npm run dev` locally.
+    profiles:
+      - full
