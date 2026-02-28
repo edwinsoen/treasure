@@ -102,6 +102,29 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 - Reimbursement status is derived from linked transactions, never stored
 - `email_events` collection and `/data/email-events/` directory are never wiped
 
+## Build Commands
+
+### Backend
+```bash
+cd backend
+uv sync --group dev          # install deps
+uv run uvicorn app.main:app --reload  # dev server (port 8000)
+uv run pytest -v             # tests
+uv run ruff check .          # lint
+uv run black .               # format
+```
+
+### Frontend
+```bash
+cd frontend
+npm install                  # install deps
+npm run dev                  # dev server (port 5173, proxies /api → 8000)
+npm run build                # production build
+npm run lint                 # eslint
+npm run format               # prettier (write)
+npm run format:check         # prettier (check only)
+```
+
 ## Implementation Order
 
 Follow the story order in `docs/epics-and-stories.md`. Each story lists its dependencies. Do not start a story until its dependencies are complete.
