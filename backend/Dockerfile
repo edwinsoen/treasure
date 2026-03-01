@@ -19,10 +19,7 @@ FROM base AS prod
 COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev
 COPY app ./app
+COPY gunicorn.conf.py ./
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
-CMD ["uv", "run", "gunicorn", "app.main:app", \
-     "-k", "uvicorn.workers.UvicornWorker", \
-     "--bind", "0.0.0.0:8000", \
-     "--workers", "1", \
-     "--access-logfile", "-"]
+CMD ["uv", "run", "gunicorn", "app.main:app", "-c", "gunicorn.conf.py"]

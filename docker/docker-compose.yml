@@ -22,6 +22,8 @@ services:
       TSR_LOG_LEVEL: INFO
       TSR_MONGODB_URI: mongodb://mongodb:27017/treasure
       TSR_AUTH_SECRET: ${TSR_AUTH_SECRET}
+    volumes:
+      - backend_secrets:/app/secrets
     depends_on:
       mongodb:
         condition: service_healthy
@@ -50,6 +52,10 @@ services:
 
 volumes:
   mongo_data:
+  # Persists the auto-generated AES-256-GCM encryption key across container
+  # rebuilds and `docker compose down/up` cycles. Survives image updates.
+  # Only `docker compose down -v` removes it — don't do that in production.
+  backend_secrets:
 
 networks:
   internal:

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 logger = structlog.get_logger()
 
 _db_client: AsyncMongoClient | None = None
+# Set to True after the first init_beanie call (indexes created).
+# With gunicorn preload_app=True, workers inherit this flag via fork,
+# so subsequent connect() calls skip index creation.
+_indexes_initialized: bool = False
 
 
 def get_db_client() -> AsyncMongoClient:
@@ -33,10 +37,15 @@ def get_db_name(mongodb_uri: str) -> str:
 
 async def connect(mongodb_uri: str, document_models: list[type[Document]]) -> None:
     """Create the PyMongo async client and initialise Beanie document models."""
-    global _db_client
+    global _db_client, _indexes_initialized
     _db_client = AsyncMongoClient(mongodb_uri)
     db_name = get_db_name(mongodb_uri)
-    await init_beanie(database=_db_client[db_name], document_models=document_models)
+    await init_beanie(
+        database=_db_client[db_name],
+        document_models=document_models,
+        skip_indexes=_indexes_initialized,
+    )
+    _indexes_initialized = True
     logger.info("Database connected", db=db_name)
 
 
