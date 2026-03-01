@@ -21,9 +21,18 @@ services:
       TSR_APP_ENV: production
       TSR_LOG_LEVEL: INFO
       TSR_MONGODB_URI: mongodb://mongodb:27017/treasure
+      TSR_AUTH_SECRET: ${TSR_AUTH_SECRET}
     depends_on:
       mongodb:
         condition: service_healthy
+    healthcheck:
+      # Liveness check — is the process responding?
+      # Component health (DB status) is reported in GET /api/health body, not via HTTP status.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - internal
 

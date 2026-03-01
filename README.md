@@ -26,6 +26,11 @@ docker compose -f docker/docker-compose.yml up --build
 
 The app will be available at **http://localhost:8080**.
 
+```bash
+# 3. Create the first user (run once after first boot)
+docker compose -f docker/docker-compose.yml exec backend treasure-setup
+```
+
 To stop: `docker compose -f docker/docker-compose.yml down`
 
 ---
@@ -64,6 +69,12 @@ cd frontend && npm install && npm run dev
 
 The app is then available at **http://localhost:5173** with full hot-reload for both backend and frontend.
 
+On first run, create the initial user:
+
+```bash
+docker compose -f docker/docker-compose.yml exec backend treasure-setup
+```
+
 ### 3. Or run everything locally (no Docker)
 
 ```bash
@@ -81,6 +92,12 @@ npm run dev
 ```
 
 You'll need a MongoDB instance running locally at `mongodb://localhost:27017`.
+
+On first run, create the initial user:
+
+```bash
+cd backend && uv run treasure-setup
+```
 
 ---
 

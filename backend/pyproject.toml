@@ -10,7 +10,20 @@ dependencies = [
     "pydantic-settings>=2.6.0",
     "structlog>=24.4.0",
     "cryptography>=43.0.0",
+    "beanie>=1.27.0",
+    "fastapi-users[beanie]>=14.0.0",
+    "pwdlib[argon2]>=0.2.0",
+    "python-multipart>=0.0.12",
 ]
+
+[project.scripts]
+treasure-setup = "app.cli.setup:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [dependency-groups]
 dev = [
@@ -27,6 +40,8 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "SIM"]
+# B008: Depends() in default args is the standard FastAPI pattern — not a bug.
+ignore = ["B008"]
 
 [tool.black]
 line-length = 100

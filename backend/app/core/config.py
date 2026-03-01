@@ -35,6 +35,12 @@ class Settings(BaseSettings):
     # Database — required, env only (may contain credentials)
     mongodb_uri: SecretStr
 
+    # Auth — required; signs FastAPI-Users reset/verification tokens
+    auth_secret: SecretStr
+
+    # CORS — optional; defaults permit local dev servers
+    allowed_origins: list[str] = ["http://localhost:5173", "http://localhost:8080"]
+
     # Encryption — optional (auto-generated on first run if absent)
     encryption_key: SecretStr | None = None
 

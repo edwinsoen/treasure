@@ -6,8 +6,8 @@
 # All values here can also be set via TSR_* environment variables, which take
 # precedence over this file.
 #
-# SECRETS (TSR_MONGODB_URI, TSR_ENCRYPTION_KEY, TSR_LLM_*_API_KEY) must be
-# set via environment variables only — do not put them in this file.
+# SECRETS (TSR_MONGODB_URI, TSR_AUTH_SECRET, TSR_ENCRYPTION_KEY, TSR_LLM_*_API_KEY)
+# must be set via environment variables only — do not put them in this file.
 
 # ---------------------------------------------------------------------------
 # App
@@ -15,6 +15,10 @@
 
 app_env = "development"   # development | production | test
 log_level = "INFO"        # DEBUG | INFO | WARNING | ERROR
+
+# CORS allowed origins — add your production domain(s) here
+# Defaults (set in code): http://localhost:5173, http://localhost:8080
+# allowed_origins = ["https://myapp.example.com"]
 
 # ---------------------------------------------------------------------------
 # LLM

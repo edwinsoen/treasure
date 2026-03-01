@@ -18,7 +18,7 @@ Read the relevant story in `docs/epics-and-stories.md` before implementing anyth
 | Layer | Technology |
 |-------|-----------|
 | Backend | Python 3.12+, FastAPI, async throughout |
-| Database | MongoDB 7.x via Motor (async driver) |
+| Database | MongoDB 7.x via PyMongo async (`pymongo.AsyncMongoClient`) |
 | Frontend | React 18+, TypeScript, Vite, Tailwind CSS |
 | PDF Parsing | Docling (Phase 2) |
 | LLM | Provider-agnostic: OpenAI, Anthropic, or Ollama (Phase 2) |
@@ -65,6 +65,19 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 - Domain exceptions in services/repositories; `HTTPException` only in routers
 - `structlog` for logging, no print statements
 - `pytest` with `pytest-asyncio` for tests
+- No `# type: ignore` and no `Any` — wrong types mean wrong design
+
+### Python Typing Patterns
+
+**SecretStr in test fixtures**: When a `Settings` field is `SecretStr`, the `TypedDict` fixture must also declare `SecretStr` and values must be `SecretStr(...)`. Do not pass plain `str` — Pylance will flag it.
+
+**TypedDict iteration is not type-safe for mixed values**: Pylance cannot narrow `isinstance(v, SecretStr)` when iterating `.items()` on a TypedDict with mixed value types. Use a separate `dict[str, str]` for loops (e.g. `monkeypatch.setenv`), built by calling `.get_secret_value()` explicitly on the TypedDict values at module level.
+
+**`BaseSettings.model_validate` still reads env vars**: It does not bypass `settings_customise_sources`. Use `Settings(**kwargs)` with `monkeypatch.delenv` to isolate init-kwarg tests.
+
+**PyMongo async, not Motor**: Motor was a thin async wrapper around PyMongo that predates PyMongo's own async support. Now that PyMongo ships a native async driver (`pymongo.AsyncMongoClient`), Motor is redundant — including for aggregation pipelines. Do not add Motor as a dependency.
+
+**fastapi_users_db_beanie v5**: `BeanieBaseUser` is only a `BaseModel`. User models must inherit from `BeanieBaseUserDocument`; access token models from `BeanieBaseAccessTokenDocument`. `user.id` is typed `PydanticObjectId | None` — assert not None before use.
 
 ### TypeScript / Frontend
 
