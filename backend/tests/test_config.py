@@ -41,7 +41,7 @@ class TestSettingsLoad:
         monkeypatch.setenv("TSR_APP_ENV", "production")
         monkeypatch.setenv("TSR_LOG_LEVEL", "WARNING")
         monkeypatch.setenv("TSR_MONGODB_URI", "mongodb://localhost:27017/treasure")
-        settings = Settings.load()
+        settings = Settings()
         assert settings.app_env == "production"
         assert settings.log_level == "WARNING"
 
@@ -50,14 +50,14 @@ class TestSettingsLoad:
         monkeypatch.delenv("TSR_LOG_LEVEL", raising=False)
         monkeypatch.delenv("TSR_MONGODB_URI", raising=False)
         with pytest.raises(ValidationError):
-            Settings.load()
+            Settings()
 
     def test_mongodb_uri_with_credentials(self, monkeypatch: pytest.MonkeyPatch):
         uri = "mongodb://user:pass@host:27017/mydb"
         monkeypatch.setenv("TSR_APP_ENV", "test")
         monkeypatch.setenv("TSR_LOG_LEVEL", "INFO")
         monkeypatch.setenv("TSR_MONGODB_URI", uri)
-        settings = Settings.load()
+        settings = Settings()
         assert settings.mongodb_uri.get_secret_value() == uri
 
 

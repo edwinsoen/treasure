@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import structlog
-from pydantic import BaseModel, SecretStr
+from pydantic import SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -17,8 +17,8 @@ from pydantic_settings import (
 logger = structlog.get_logger()
 
 
-class _EnvReader(BaseSettings):
-    """Reads raw config values from all sources. All fields optional at this layer."""
+class Settings(BaseSettings):
+    """Application settings. Missing required fields raise ValidationError at startup."""
 
     model_config = SettingsConfigDict(
         env_prefix="TSR_",
@@ -27,32 +27,6 @@ class _EnvReader(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
-
-    app_env: str | None = None
-    log_level: str | None = None
-    mongodb_uri: SecretStr | None = None
-    encryption_key: SecretStr | None = None
-    llm_provider: str | None = None
-    llm_model: str | None = None
-    llm_ollama_base_url: str | None = None
-    llm_openai_api_key: SecretStr | None = None
-    llm_anthropic_api_key: SecretStr | None = None
-
-    @classmethod
-    def settings_customise_sources(
-        cls,
-        settings_cls: type[BaseSettings],
-        init_settings: PydanticBaseSettingsSource,
-        env_settings: PydanticBaseSettingsSource,
-        dotenv_settings: PydanticBaseSettingsSource,
-        file_secret_settings: PydanticBaseSettingsSource,
-    ) -> tuple[PydanticBaseSettingsSource, ...]:
-        # Priority: env vars > config.toml > .env file
-        return (env_settings, TomlConfigSettingsSource(settings_cls), dotenv_settings)
-
-
-class Settings(BaseModel):
-    """Application settings. Required fields are validated at load time."""
 
     # App — required
     app_env: Literal["development", "production", "test"]
@@ -72,27 +46,26 @@ class Settings(BaseModel):
     llm_anthropic_api_key: SecretStr | None = None
 
     @classmethod
-    def load(cls) -> Settings:
-        """Load and validate settings from environment, config file, and .env."""
-        raw = _EnvReader()
-        return cls.model_validate(
-            {
-                "app_env": raw.app_env,
-                "log_level": raw.log_level,
-                "mongodb_uri": raw.mongodb_uri,
-                "encryption_key": raw.encryption_key,
-                "llm_provider": raw.llm_provider,
-                "llm_model": raw.llm_model,
-                "llm_ollama_base_url": raw.llm_ollama_base_url,
-                "llm_openai_api_key": raw.llm_openai_api_key,
-                "llm_anthropic_api_key": raw.llm_anthropic_api_key,
-            }
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        # Priority: env vars > config.toml > .env file > init kwargs
+        return (
+            env_settings,
+            TomlConfigSettingsSource(settings_cls),
+            dotenv_settings,
+            init_settings,
         )
 
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings.load()
+    return Settings()  # type: ignore[call-arg]
 
 
 def resolve_encryption_key(settings: Settings, secrets_dir: Path = Path("secrets")) -> str:
