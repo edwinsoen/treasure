@@ -1,0 +1,25 @@
+# Treasure — backend configuration
+#
+# Copy this file to config.toml and fill in all values.
+# config.toml is gitignored — never commit it.
+#
+# All values here can also be set via TSR_* environment variables, which take
+# precedence over this file.
+#
+# SECRETS (TSR_MONGODB_URI, TSR_ENCRYPTION_KEY, TSR_LLM_*_API_KEY) must be
+# set via environment variables only — do not put them in this file.
+
+# ---------------------------------------------------------------------------
+# App
+# ---------------------------------------------------------------------------
+
+app_env = "development"   # development | production | test
+log_level = "INFO"        # DEBUG | INFO | WARNING | ERROR
+
+# ---------------------------------------------------------------------------
+# LLM
+# ---------------------------------------------------------------------------
+
+llm_provider = "anthropic"    # openai | anthropic | ollama
+llm_model = "claude-sonnet-4-6"
+# llm_ollama_base_url = "http://localhost:11434"   # required when llm_provider = ollama

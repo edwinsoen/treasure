@@ -14,6 +14,8 @@ services:
   backend:
     build:
       target: dev
+    environment:
+      TSR_APP_ENV: development
     volumes:
       - ../backend:/app
       # .venv is at /opt/venv in the dev image (UV_PROJECT_ENVIRONMENT),

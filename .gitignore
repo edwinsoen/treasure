@@ -3,6 +3,9 @@
 CLAUDE.local.md
 .claude/settings.json
 
+# VS Code (machine-specific; commit .vscode/extensions.json if desired)
+.vscode/settings.json
+
 # Python
 __pycache__/
 *.py[cod]
@@ -21,6 +24,10 @@ frontend/dist/
 # Environment
 .env
 .env.local
+
+# Backend config and secrets (local overrides — never commit)
+backend/config.toml
+backend/secrets/
 
 # macOS
 .DS_Store

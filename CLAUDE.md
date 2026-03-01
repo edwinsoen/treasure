@@ -11,7 +11,7 @@ Tracking scope: expenses, income, investments, and giving.
 - `docs/requirements.md` -- High-level product requirements
 - `docs/epics-and-stories.md` -- Epics, user stories with acceptance criteria, technical notes, and dependency maps
 
-Read the relevant story in `docs/epics-and-stories.md` before implementing anything. Each story has acceptance criteria, technical notes, and dependencies.
+Read the relevant story in `docs/epics-and-stories.md` before implementing anything. Each story has acceptance criteria, technical notes, and dependencies. These are authored by Claude Opus 4.6, with light vetting. They are not fully prescriptive, and details are to be discussed during planning stage.
 
 ## Stack
 
@@ -73,6 +73,7 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 - Tailwind for styling, no CSS modules
 - TanStack Query for server state
 - No default exports except pages/routes
+- Never ignore types or use Any - this is a strong signal that you are desinging the code wrong
 
 ### Naming
 

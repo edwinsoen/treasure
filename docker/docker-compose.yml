@@ -18,7 +18,9 @@ services:
       dockerfile: Dockerfile
       target: prod
     environment:
-      MONGODB_URI: mongodb://mongodb:27017/${MONGODB_DATABASE:-treasure}
+      TSR_APP_ENV: production
+      TSR_LOG_LEVEL: INFO
+      TSR_MONGODB_URI: mongodb://mongodb:27017/treasure
     depends_on:
       mongodb:
         condition: service_healthy
