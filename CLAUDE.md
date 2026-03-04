@@ -142,10 +142,10 @@ npm run format:check         # prettier (check only)
 ### Docker
 ```bash
 # Full stack at http://localhost:8080 (prod images)
-docker compose -f docker/docker-compose.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 
 # Dev: backend hot-reload on :8000, mongodb on :27017; run frontend locally
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
 
 # Run frontend locally (Vite dev server, proxies /api to localhost:8000)
 cd frontend && npm run dev

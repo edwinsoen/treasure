@@ -9,12 +9,15 @@ from fastapi.responses import JSONResponse
 from pymongo.errors import NetworkTimeout, ServerSelectionTimeoutError
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api.audit_log import router as audit_log_router
 from app.api.health import router as health_router
+from app.audit.middleware import AuditLogMiddleware
+from app.audit.service import close_audit_db, init_audit_db
 from app.auth.backend import auth_backend
 from app.auth.deps import fastapi_users
 from app.auth.schemas import UserRead, UserUpdate
 from app.core.config import get_settings, resolve_encryption_key
-from app.core.db import connect, disconnect
+from app.core.db import connect, disconnect, get_db_name
 from app.models.user import AccessToken, User
 
 logger = structlog.get_logger()
@@ -48,8 +51,25 @@ async def lifespan(app: FastAPI):
     except Exception as exc:
         logger.warning("Database unavailable at startup — will retry on requests", error=str(exc))
 
+    # Initialise audit database (may be the same or a separate MongoDB instance).
+    mongodb_uri = settings.mongodb_uri.get_secret_value()
+    audit_uri = (
+        settings.audit_mongodb_uri.get_secret_value()
+        if settings.audit_mongodb_uri is not None
+        else mongodb_uri
+    )
+    try:
+        await init_audit_db(
+            audit_uri,
+            get_db_name(audit_uri),
+            retention_days=settings.audit_retention_days,
+        )
+    except Exception as exc:
+        logger.warning("Audit database unavailable at startup", error=str(exc))
+
     logger.info("Starting Treasure", env=settings.app_env, log_level=settings.log_level)
     yield
+    await close_audit_db()
     await disconnect()
 
 
@@ -64,6 +84,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Middleware is processed LIFO: last added = outermost.
+# AuditLog is innermost (closest to the handler) so it can read request.state
+# after the handler has annotated the audit context.
+app.add_middleware(AuditLogMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     CORSMiddleware,
@@ -87,6 +111,7 @@ app.include_router(
     prefix="/api/users",
     tags=["users"],
 )
+app.include_router(audit_log_router, prefix="/api", tags=["audit"])
 
 
 @app.exception_handler(ServerSelectionTimeoutError)

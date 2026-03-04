@@ -22,6 +22,8 @@ from beanie import init_beanie
 from fastapi_users.password import PasswordHelper
 from pymongo import AsyncMongoClient
 
+from app.audit.service import close_audit_db, init_audit_db
+from app.audit.service import log as audit_log
 from app.core.config import get_settings, resolve_encryption_key
 from app.core.db import get_db_name
 from app.models.user import AccessToken, User
@@ -40,11 +42,22 @@ async def _run() -> None:
     mongodb_uri = settings.mongodb_uri.get_secret_value()
     db_name = get_db_name(mongodb_uri)
 
+    audit_uri = (
+        settings.audit_mongodb_uri.get_secret_value()
+        if settings.audit_mongodb_uri is not None
+        else mongodb_uri
+    )
+
     client = AsyncMongoClient(mongodb_uri)
     try:
         await init_beanie(
             database=client[db_name],
             document_models=[User, AccessToken],
+        )
+        await init_audit_db(
+            audit_uri,
+            get_db_name(audit_uri),
+            retention_days=settings.audit_retention_days,
         )
 
         existing = await User.find_one()
@@ -84,6 +97,18 @@ async def _run() -> None:
         )
         await user.create()
 
+        # Audit the user creation
+        assert user.id is not None
+        await audit_log(
+            owner_id=str(user.id),
+            actor=str(user.id),
+            action="create",
+            entity_type="user",
+            entity_id=str(user.id),
+            source="treasure-setup",
+            params={"email": email, "display_name": display_name},
+        )
+
         # Ensure the encryption key file exists
         resolve_encryption_key(settings)
 
@@ -93,6 +118,7 @@ async def _run() -> None:
             print("Save this key — it will not be shown again.")
 
     finally:
+        await close_audit_db()
         await client.aclose()
 
 

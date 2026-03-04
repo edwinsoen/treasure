@@ -44,6 +44,10 @@ class Settings(BaseSettings):
     # Encryption — optional (auto-generated on first run if absent)
     encryption_key: SecretStr | None = None
 
+    # Audit — optional; defaults use the main mongodb connection
+    audit_mongodb_uri: SecretStr | None = None  # falls back to mongodb_uri
+    audit_retention_days: int | None = None  # TTL in days; None = keep forever
+
     # LLM — optional (Phase 2); per-provider validation lives in the LLM module
     llm_provider: Literal["openai", "anthropic", "ollama"] | None = None
     llm_model: str | None = None

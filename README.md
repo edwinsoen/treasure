@@ -17,21 +17,22 @@ treasure/
 The fastest way to run the full stack:
 
 ```bash
-# 1. Copy the example env file (edit values if needed)
+# 1. Copy the example env file and fill in TSR_AUTH_SECRET
 cp .env.example .env
+# Generate a secret: python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 # 2. Build and start everything
-docker compose -f docker/docker-compose.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml up --build
 ```
 
 The app will be available at **http://localhost:8080**.
 
 ```bash
 # 3. Create the first user (run once after first boot)
-docker compose -f docker/docker-compose.yml exec backend treasure-setup
+docker compose --env-file .env -f docker/docker-compose.yml exec backend uv run treasure-setup
 ```
 
-To stop: `docker compose -f docker/docker-compose.yml down`
+To stop: `docker compose --env-file .env -f docker/docker-compose.yml down`
 
 ---
 
@@ -61,7 +62,7 @@ frontend locally with the Vite dev server:
 
 ```bash
 # Terminal 1 — backend + MongoDB (hot-reload on :8000, MongoDB on :27017)
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
+docker compose --env-file .env -f docker/docker-compose.yml -f docker/docker-compose.dev.yml up --build
 
 # Terminal 2 — frontend dev server (HMR on :5173, proxies /api to :8000)
 cd frontend && npm install && npm run dev
@@ -72,7 +73,7 @@ The app is then available at **http://localhost:5173** with full hot-reload for 
 On first run, create the initial user:
 
 ```bash
-docker compose -f docker/docker-compose.yml exec backend treasure-setup
+docker compose --env-file .env -f docker/docker-compose.yml exec backend uv run treasure-setup
 ```
 
 ### 3. Or run everything locally (no Docker)

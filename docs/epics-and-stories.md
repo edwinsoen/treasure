@@ -111,21 +111,19 @@ Sets up the repository, toolchain, deployment stack, and cross-cutting infrastru
 
 #### Story 1.5: Audit Log Infrastructure
 
-**Description:** Implement a cross-cutting audit log that records every data mutation with timestamp, source (user/system/auto), entity type, entity ID, action, and before/after snapshot.
+**Description:** Implement a cross-cutting audit log that records every action in the system with timestamp, source (user/system/auto), entity type, entity ID, action, and before/after snapshot (if creating/mutating an entity).
 
 **Acceptance Criteria:**
-- Audit log entries stored in a dedicated MongoDB collection
-- Every create, update, and delete on core entities (Transaction, Receipt, Account, Category, Budget) generates an audit entry
-- Entry includes: `timestamp`, `owner_id`, `actor` (user ID of who performed the action, or system process identifier), `action` (create/update/delete), `entity_type`, `entity_id`, `changes` (diff of modified fields), `source` (manual/gmail/statement/auto-match)
+- Audit log entries stored in a dedicated MongoDB collection, through a separate connection URI. In simple deployment this may be the same database as the application.
+- Every API action, or system-triggered action, generates an audit entry, which is logged in terms of what entity it is changing.
+- Entry includes: `timestamp`, `actor` (user ID of who performed the action, or system process identifier), `action` (create/update/delete/complex-action-name), `entity_type`, `entity_id`, `changes` (diff of modified fields), `source` (API path)
 - Audit log is append-only; entries are never modified or deleted
 - API endpoint to query audit log with filters: entity type, entity ID, date range, actor
 - Audit log middleware/decorator pattern so new entities get logging automatically
 
 **Technical Notes:**
-- Implement as a FastAPI middleware or a repository-layer decorator that intercepts writes
-- Store `changes` as a JSON diff (old value, new value per field) to keep entries compact
+- Implement as a FastAPI middleware
 - Consider TTL index on MongoDB if log size becomes a concern (configurable retention)
-- This is a foundational dependency for reconciliation (Story 7.x) which requires full traceability
 
 **Dependencies:** Story 1.2, Story 1.3
 

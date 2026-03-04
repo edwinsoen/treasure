@@ -7,6 +7,7 @@ from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException, Request, status
 from fastapi_users import FastAPIUsers
 
+from app.audit.context import AuditContext
 from app.auth.backend import auth_backend
 from app.auth.manager import get_user_manager
 from app.models.user import User
@@ -49,6 +50,15 @@ class UserContext:
     created_by: PydanticObjectId
 
 
-async def get_user_context(user: User = Depends(get_current_user)) -> UserContext:
+async def get_user_context(
+    request: Request,
+    user: User = Depends(get_current_user),
+) -> UserContext:
     assert user.id is not None  # always set for users retrieved from the database
+
+    # Propagate actor to the audit middleware via request.state.
+    audit_ctx: AuditContext | None = getattr(request.state, "audit_context", None)
+    if audit_ctx is not None:
+        audit_ctx.actor = str(user.id)
+
     return UserContext(owner_id=user.id, created_by=user.id)
