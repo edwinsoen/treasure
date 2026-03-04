@@ -79,9 +79,7 @@ async def client(seed_db):
             return_value={"items": [], "next_cursor": None},
         ),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="https://test"
-        ) as http:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as http:
             yield http
 
 
