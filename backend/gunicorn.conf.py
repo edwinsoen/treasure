@@ -45,12 +45,13 @@ def on_starting(server: object) -> None:  # noqa: ARG001
     from app.audit.service import close_audit_db, init_audit_db
     from app.core.config import get_settings, resolve_encryption_key
     from app.core.db import connect, disconnect, get_db_name
+    from app.models.account import Account
     from app.models.user import AccessToken, User
 
     async def _init() -> None:
         settings = get_settings()
         resolve_encryption_key(settings)
-        await connect(settings.mongodb_uri.get_secret_value(), [User, AccessToken])
+        await connect(settings.mongodb_uri.get_secret_value(), [User, AccessToken, Account])
 
         mongodb_uri = settings.mongodb_uri.get_secret_value()
         audit_uri = (

@@ -51,6 +51,7 @@ async def mongo_db():
     from pymongo import AsyncMongoClient
 
     from app.core.db import get_db_name
+    from app.models.account import Account
     from app.models.user import AccessToken, User
 
     uri = os.environ.get("TSR_MONGODB_URI", "mongodb://localhost:27017/treasure_test")
@@ -62,7 +63,9 @@ async def mongo_db():
         pytest.skip("MongoDB not available")
 
     db_name = get_db_name(uri)
-    await init_beanie(database=client[db_name], document_models=[User, AccessToken])
+    await init_beanie(
+        database=client[db_name], document_models=[User, AccessToken, Account]
+    )
 
     yield client[db_name]
 
@@ -78,6 +81,7 @@ async def seed_db(mongo_db):
     and inserts additional documents, or they can skip this and manage their own
     data using the mongo_db database handle directly.
     """
+    from app.models.account import Account
     from app.models.user import AccessToken, User
     from tests.fixtures.users import default_users
 
@@ -86,5 +90,6 @@ async def seed_db(mongo_db):
 
     yield
 
+    await Account.find_all().delete()
     await AccessToken.find_all().delete()
     await User.find_all().delete()

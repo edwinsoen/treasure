@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pymongo.errors import NetworkTimeout, ServerSelectionTimeoutError
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api.accounts import router as accounts_router
 from app.api.audit_log import router as audit_log_router
 from app.api.health import router as health_router
 from app.audit.middleware import AuditLogMiddleware
@@ -18,11 +19,12 @@ from app.auth.deps import fastapi_users
 from app.auth.schemas import UserRead, UserUpdate
 from app.core.config import get_settings, resolve_encryption_key
 from app.core.db import connect, disconnect, get_db_name
+from app.models.account import Account
 from app.models.user import AccessToken, User
 
 logger = structlog.get_logger()
 
-_DOCUMENT_MODELS = [User, AccessToken]
+_DOCUMENT_MODELS = [User, AccessToken, Account]
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -111,6 +113,7 @@ app.include_router(
     prefix="/api/users",
     tags=["users"],
 )
+app.include_router(accounts_router, prefix="/api", tags=["accounts"])
 app.include_router(audit_log_router, prefix="/api", tags=["audit"])
 
 

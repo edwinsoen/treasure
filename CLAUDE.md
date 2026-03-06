@@ -107,6 +107,12 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 - Filters as query parameters
 - Soft deletes only
 - All timestamps UTC ISO 8601
+- **PATCH must use RFC 6902 JSON Patch format** (`application/json-patch+json`). Request body is a JSON array of operations, e.g. `[{"op": "replace", "path": "/name", "value": "New Name"}]`. Do NOT use plain JSON objects or JSON Merge Patch for updates. No PUT endpoints for partial updates.
+
+### Testing Requirements
+
+- **Integration tests must run against a real MongoDB instance.** Do not mock database calls in integration tests. Start a MongoDB container (`docker run -d --name treasure-test-mongo -p 27017:27017 mongo:7`) and run `uv run pytest -v` against it. Tests that need MongoDB use the `mongo_db` / `seed_db` fixtures which skip automatically if MongoDB is unreachable.
+- **Cover edge cases and invalid inputs in integration tests.** Every endpoint must have tests for: missing required fields, invalid field values, malformed JSON, empty bodies, invalid ObjectId format in path params, unsupported content types, duplicate/conflict scenarios, and 404 for nonexistent resources. Do not just test the happy path.
 
 ## Key Domain Rules
 

@@ -145,7 +145,7 @@ Establishes the MongoDB schemas, repository layer, and REST API for all primary 
 **Description:** Implement the Account entity representing a financial account or wallet, with full CRUD API.
 
 **Acceptance Criteria:**
-- Account document schema: `name`, `type` (enum: checking, savings, credit_card, investment, cash, stored_value), `currency` (ISO 4217), `initial_balance` (optional, for manual accounts), `expects_alerts` (boolean, default true for checking/savings/credit_card, false for cash/stored_value; indicates whether this account receives bank alert emails), `is_active`, `created_at`, `updated_at`
+- Account document schema: `name`, `type` (enum: bank_account, credit_card, investment, cash, stored_value), `currency` (ISO 4217), `initial_balance` (optional), `expects_alerts` (boolean, default true for checking/savings/credit_card, false for cash/stored_value; indicates whether this account receives bank alert emails), `is_active`, `created_at`, `updated_at`
 - CRUD endpoints: `POST /api/accounts`, `GET /api/accounts`, `GET /api/accounts/{id}`, `PUT /api/accounts/{id}`, `DELETE /api/accounts/{id}` (soft delete only)
 - Validation: unique account name per owner, valid currency code, type must be from the enum
 - Derived balance field computed on read (sum of reconciled transactions + initial balance); not stored
