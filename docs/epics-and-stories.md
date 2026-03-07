@@ -145,19 +145,15 @@ Establishes the MongoDB schemas, repository layer, and REST API for all primary 
 **Description:** Implement the Account entity representing a financial account or wallet, with full CRUD API.
 
 **Acceptance Criteria:**
-- Account document schema: `name`, `type` (enum: bank_account, credit_card, investment, cash, stored_value), `currency` (ISO 4217), `initial_balance` (optional), `expects_alerts` (boolean, default true for checking/savings/credit_card, false for cash/stored_value; indicates whether this account receives bank alert emails), `is_active`, `created_at`, `updated_at`
+- Account document schema: `name`, `type` (enum: bank_account, credit_card, investment, cash, stored_value), `currency` (ISO 4217), `balance`, `initial_balance` (optional), `expects_alerts` (boolean, default true for checking/savings/credit_card, false for cash/stored_value; indicates whether this account receives bank alert emails), `is_active`, `created_at`, `updated_at`
 - CRUD endpoints: `POST /api/accounts`, `GET /api/accounts`, `GET /api/accounts/{id}`, `PUT /api/accounts/{id}`, `DELETE /api/accounts/{id}` (soft delete only)
 - Validation: unique account name per owner, valid currency code, type must be from the enum
-- Derived balance field computed on read (sum of reconciled transactions + initial balance); not stored
 - List endpoint supports filtering by type and is_active
 - Soft delete sets `is_active=false`; account with reconciled transactions cannot be hard-deleted
 - `stored_value` accounts (gift cards, store credit, prepaid balances) are lightweight: no statement reconciliation, no alert expectations. UX should make them easy to create (e.g., "Add gift card" shortcut) and show remaining balance prominently
 
 **Technical Notes:**
-- Use Motor (async MongoDB driver) with Pydantic models for schema validation
-- Repository pattern: `AccountRepository` class with methods that return Pydantic models, not raw dicts
 - Currency codes validated against a static ISO 4217 list (no external API call)
-- Balance derivation via aggregation pipeline; cache in application layer if performance becomes an issue
 
 **Dependencies:** Story 1.2, Story 1.5
 
