@@ -111,7 +111,7 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 
 ### Testing Requirements
 
-- **Integration tests must run against a real MongoDB instance.** Do not mock database calls in integration tests. Start a MongoDB container (`docker run -d --name treasure-test-mongo -p 27017:27017 mongo:7`) and run `uv run pytest -v` against it. Tests that need MongoDB use the `mongo_db` / `seed_db` fixtures which skip automatically if MongoDB is unreachable.
+- **Integration tests must run against a real MongoDB instance.** Do not mock database calls in integration tests. Use `invoke test` from the project root (handles MongoDB lifecycle automatically), or manually start a container and run `uv run pytest -v`. Tests that need MongoDB use the `mongo_db` / `seed_db` fixtures which skip automatically if MongoDB is unreachable.
 - **Cover edge cases and invalid inputs in integration tests.** Every endpoint must have tests for: missing required fields, invalid field values, malformed JSON, empty bodies, invalid ObjectId format in path params, unsupported content types, duplicate/conflict scenarios, and 404 for nonexistent resources. Do not just test the happy path.
 
 ## Key Domain Rules
@@ -124,12 +124,31 @@ Raw Gmail events are stored before processing and can be replayed to rebuild all
 
 ## Build Commands
 
+### One-Time Setup
+```bash
+uv tool install invoke       # invoke task runner
+git config core.hooksPath .githooks  # enable pre-commit hook (black + ruff + prettier + eslint)
+```
+
+### Invoke Tasks (from project root)
+```bash
+invoke test                  # start MongoDB, run full backend test suite
+invoke test test_accounts.py # single file
+invoke test test_accounts.py::TestPatchAccount  # single class
+invoke test -- -k test_replace  # raw pytest flags
+invoke test-stop             # remove test MongoDB container
+invoke start                 # prod-like stack, all services in Docker (:8080)
+invoke stop                  # stop prod-like stack
+invoke start-dev             # dev stack: Docker (backend :8000 + MongoDB :27017) + Vite (:5173)
+invoke stop-dev              # stop dev stack
+```
+
 ### Backend
 ```bash
 cd backend
 uv sync --group dev          # install deps
 uv run uvicorn app.main:app --reload  # dev server (port 8000)
-uv run pytest -v             # tests
+uv run pytest -v             # tests (requires MongoDB; prefer `invoke test`)
 uv run ruff check .          # lint
 uv run black .               # format
 ```

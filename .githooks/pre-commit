@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -e
+
+# Only check staged .py files under backend/
+BACKEND_STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'backend/*.py' | sed 's|^backend/||')
+FRONTEND_STAGED=$(git diff --cached --name-only --diff-filter=ACM -- 'frontend/*.ts' 'frontend/*.tsx')
+
+if [ -n "$BACKEND_STAGED" ]; then
+    echo "==> Running black (check) on staged backend files..."
+    (cd backend && echo "$BACKEND_STAGED" | xargs uv run black --check --quiet)
+    echo "==> Running ruff on staged backend files..."
+    (cd backend && echo "$BACKEND_STAGED" | xargs uv run ruff check)
+fi
+
+if [ -n "$FRONTEND_STAGED" ]; then
+    echo "==> Running prettier (check) on staged frontend files..."
+    (cd frontend && echo "$FRONTEND_STAGED" | sed 's|^frontend/||' | xargs npx prettier --check)
+    echo "==> Running eslint on staged frontend files..."
+    (cd frontend && npm run lint)
+fi
