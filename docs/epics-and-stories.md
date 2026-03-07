@@ -161,21 +161,25 @@ Establishes the MongoDB schemas, repository layer, and REST API for all primary 
 
 #### Story 2.2: Category Entity and Hierarchy API
 
-**Description:** Implement the hierarchical Category entity with fixed top-level types and user-defined subcategories.
+**Description:** Implement the hierarchical Category entity with user-defined categories and optional one-level nesting.
 
 **Acceptance Criteria:**
-- Category document schema: `name`, `type` (enum: expense, income, investment, giving), `parent_id` (null for top-level), `status` (active, suggested), `is_system` (true for fixed top-level types), `sort_order`, `created_at`, `updated_at`
-- Seed the four fixed top-level categories on first startup (expense, income, investment, giving); these cannot be deleted or renamed
-- CRUD endpoints: `POST /api/categories`, `GET /api/categories` (returns tree), `GET /api/categories/{id}`, `PUT /api/categories/{id}`, `DELETE /api/categories/{id}`
-- Subcategory creation requires a valid `parent_id` pointing to an existing category of the same `type`
-- Tree endpoint returns nested structure: top-level types with children arrays
+- Category document schema: `name`, `slug` (auto-generated kebab-case from name, e.g. "Food Deliveries" → `food-deliveries`), `type` (enum: expense, income, investment, giving), `parent_id` (null for top-level, ObjectId for subcategory), `status` (active, suggested), `sort_order`, `created_at`, `updated_at`
+- `name` and `slug` must each be unique across all categories (not scoped to type or parent)
+- Exactly two levels allowed: top-level categories (`parent_id` is null) and subcategories (`parent_id` references a top-level category). A subcategory cannot itself have children
+- Subcategory inherits `type` from its parent; `type` on subcategory creation request is optional (inferred from parent) but if provided must match
+- Create a file to configure the seed data for category structure, which will be loaded into MongoDB if there is no category document found
+- CRUD endpoints: `POST /api/categories`, `GET /api/categories` (returns tree), `GET /api/categories/{slug}`, `PATCH /api/categories/{slug}`, `DELETE /api/categories/{slug}`
+- API uses `slug` everywhere categories are referenced: path parameters, request bodies (e.g. `parent_slug` for subcategory creation, `category_slug` in `category_attributions`), and response bodies. MongoDB documents store `parent_id` / `category_id` internally; the API layer translates between slug and id
+- Tree endpoint returns nested structure: top-level categories with `children` arrays
 - Deletion: only if no transactions reference the category; otherwise return 409 with count of affected transactions
-- Category `type` is inherited from the top-level ancestor and cannot differ
 
 **Technical Notes:**
-- Flat storage with `parent_id` is sufficient for a shallow hierarchy (2-3 levels max)
+- Flat storage with `parent_id` is sufficient for the two-level hierarchy
 - Tree construction done in application layer, not aggregation pipeline, for simplicity
 - `suggested` status used by Smart Recategorization (Phase 3); for now just include the field
+- Slug generated on create/rename; validated as unique before save
+- `type` is not a structural grouping — it's a tag on each category used for reporting (e.g. income vs expense aggregation)
 
 **Dependencies:** Story 1.2, Story 1.5
 
@@ -207,14 +211,14 @@ Establishes the MongoDB schemas, repository layer, and REST API for all primary 
   - `line_items`: embedded array of `{description, amount, quantity, category_id}`
   - `created_at`, `updated_at`
 - CRUD endpoints: `POST /api/transactions`, `GET /api/transactions`, `GET /api/transactions/{id}`, `PUT /api/transactions/{id}`, `DELETE /api/transactions/{id}`
-- List endpoint with query parameters: `account_id`, `category_id`, `status`, `direction`, `date_from`, `date_to`, `amount_min`, `amount_max`, `tag`, `merchant`, `reimbursement_status`, `source`
+- List endpoint with query parameters: `account_id`, `category_slug`, `status`, `direction`, `date_from`, `date_to`, `amount_min`, `amount_max`, `tag`, `merchant`, `reimbursement_status`, `source`
 - Pagination: cursor-based using `created_at` + `_id`
 - Validation: `amount_alert` required; `category_attributions` amounts must sum to transaction amount if present; `account_id` must reference existing account
 - Status transitions enforced: unconfirmed -> confirmed -> reconciled (no skipping, no backward without explicit unlock)
 - `amount_mismatch` flag auto-set when `amount_settled` is written and differs from `amount_alert`
 
 **Technical Notes:**
-- `category_attributions` as an embedded array avoids a join table; keeps the document self-contained
+- `category_attributions` as an embedded array avoids a join table; keeps the document self-contained. Document stores `category_id` (ObjectId); API request/response uses `category_slug` — the API layer resolves slugs to IDs on write and IDs to slugs on read
 - `merchant_name_normalized` populated by a normalizer utility (deterministic cleanup: lowercase, strip suffixes like "Inc.", collapse whitespace)
 - Cursor-based pagination is essential for large transaction lists; offset-based breaks on concurrent inserts
 - Index on: `(account_id, date_alert)`, `(status)`, `(merchant_name_normalized)`, `(gmail_message_id)` unique sparse
@@ -480,7 +484,7 @@ The primary user-facing data entry path until Gmail integration is built. Must b
 - Responsive layout: summary at the top, recent transactions below
 
 **Technical Notes:**
-- Monthly summary backed by a dedicated endpoint: `GET /api/summary?period=YYYY-MM` returning `{income, expenses, net}` via aggregation pipeline grouped by top-level category type
+- Monthly summary backed by a dedicated endpoint: `GET /api/summary?period=YYYY-MM` returning `{income, expenses, net}` via aggregation pipeline grouped by category `type` field
 - Recent transactions reuse the existing `GET /api/transactions?limit=15&sort=-date_alert` endpoint
 - Keep this screen simple and fast; it will accumulate widgets over time (budget cards in Phase 3 Story 10.2, reconciliation counters in Phase 2 Story 7.3, etc.)
 - No charts in Phase 1; just numbers. Charts arrive with the reporting epic (Phase 3 E11)
@@ -495,11 +499,11 @@ User-facing category CRUD, assignment UX, and the rule system for auto-categoriz
 
 #### Story 4.1: Category Management UI
 
-**Description:** Build the UI for viewing, creating, editing, and deleting categories within the fixed hierarchy.
+**Description:** Build the UI for viewing, creating, editing, and deleting categories within the two-level hierarchy.
 
 **Acceptance Criteria:**
-- Tree view showing the four top-level types with their subcategories
-- Create subcategory: name, parent (must be within the same top-level type), optional icon/color
+- Tree view showing top-level categories with their subcategories, grouped or filterable by type (expense, income, investment, giving)
+- Create category: name, type, optional parent (for subcategory), optional icon/color
 - Edit: rename, change color/icon, reorder within siblings
 - Delete: only if no transactions reference it; show count of affected transactions on hover/attempt
 - Merge: move all transactions from one category to another, then delete the source (with confirmation showing impact)
@@ -521,7 +525,7 @@ User-facing category CRUD, assignment UX, and the rule system for auto-categoriz
 **Acceptance Criteria:**
 - Single-click category assignment from a dropdown in the transaction list (inline edit)
 - Category assignment is independent of rules: setting a category on a transaction does not create or require a rule
-- Category picker shows the hierarchy: top-level type headers with subcategories beneath
+- Category picker shows the hierarchy: top-level categories with subcategories beneath, optionally grouped by type
 - Recent/frequent categories shown at the top of the picker for quick access
 - Split categorization: button to "Split" opens a multi-row editor with category + amount per row
   - Amounts must sum to transaction total; remainder auto-computed for last row
@@ -532,7 +536,7 @@ User-facing category CRUD, assignment UX, and the rule system for auto-categoriz
 **Technical Notes:**
 - Category picker is a reusable component (used in transaction entry, list, and receipt views)
 - Split edits hit `PUT /api/transactions/{id}` updating the `category_attributions` array
-- Frequent categories: query `category_attributions` across recent transactions, return top N category IDs
+- Frequent categories: query `category_attributions` across recent transactions, return top N category slugs
 
 **Dependencies:** Story 3.4, Story 4.1
 
@@ -543,7 +547,7 @@ User-facing category CRUD, assignment UX, and the rule system for auto-categoriz
 **Description:** Implement a rule system where merchant names are mapped to categories, both system-default and user-defined, powering auto-categorization on transaction ingest.
 
 **Acceptance Criteria:**
-- Rule schema: `merchant_pattern` (exact or contains match on normalized name), `category_id`, `priority` (user rules override system defaults), `source` (system, user, learned), `created_at`
+- Rule schema: `merchant_pattern` (exact or contains match on normalized name), `category_id` (document stores ObjectId; API uses `category_slug`), `priority` (user rules override system defaults), `source` (system, user, learned), `created_at`
 - System ships with a default rule set (e.g., "starbucks" -> Expense > Food & Drink, "netflix" -> Expense > Subscriptions)
 - User can create rules manually via a rules management UI
 - When a user recategorizes a transaction, system prompts to create a learned rule for that merchant (user can dismiss; the category change applies regardless)
@@ -1020,10 +1024,10 @@ Budget creation, tracking, and alerting.
 **Description:** Implement the Budget entity and API for creating and managing spending targets.
 
 **Acceptance Criteria:**
-- Budget document schema: `name`, `type` (expense_cap, income_target, savings_goal, giving_target), `category_ids` (array, references one or more categories), `amount`, `frequency` (one_time, weekly, monthly, quarterly, annual), `start_date`, `end_date` (for one-time), `rollover_enabled`, `alert_threshold` (percentage, e.g., 80), `gross_or_net` (for reimbursable expense handling), `is_active`, `created_at`, `updated_at`
+- Budget document schema: `name`, `type` (expense_cap, income_target, savings_goal, giving_target), `category_ids` (array of ObjectIds; API uses `category_slugs`), `amount`, `frequency` (one_time, weekly, monthly, quarterly, annual), `start_date`, `end_date` (for one-time), `rollover_enabled`, `alert_threshold` (percentage, e.g., 80), `gross_or_net` (for reimbursable expense handling), `is_active`, `created_at`, `updated_at`
 - CRUD endpoints: `POST /api/budgets`, `GET /api/budgets`, `GET /api/budgets/{id}`, `PUT /api/budgets/{id}`, `DELETE /api/budgets/{id}`
 - Validation:
-  - Category IDs must exist and match the budget type (e.g., expense_cap only references expense categories)
+  - Category IDs must reference existing categories
   - Amount must be positive
   - Frequency + start_date defines the periods
 - Actuals calculation: sum of `confirmed` and `reconciled` transactions in the budget's categories for the current period
