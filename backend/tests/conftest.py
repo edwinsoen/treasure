@@ -63,9 +63,7 @@ async def mongo_db():
         pytest.skip("MongoDB not available")
 
     db_name = get_db_name(uri)
-    await init_beanie(
-        database=client[db_name], document_models=[User, AccessToken, Account]
-    )
+    await init_beanie(database=client[db_name], document_models=[User, AccessToken, Account])
 
     yield client[db_name]
 

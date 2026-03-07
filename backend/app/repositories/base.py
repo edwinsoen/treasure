@@ -47,9 +47,7 @@ class BaseRepository[TDocument: Document]:
             query = query.sort(sort)
         return await query.to_list()
 
-    async def update(
-        self, doc_id: PydanticObjectId, updates: dict
-    ) -> TDocument | None:
+    async def update(self, doc_id: PydanticObjectId, updates: dict) -> TDocument | None:
         """Update a document by ID. Returns the updated document or None."""
         doc = await self.get_by_id(doc_id)
         if doc is None:

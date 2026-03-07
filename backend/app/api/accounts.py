@@ -30,9 +30,7 @@ def _repo(ctx: UserContext) -> AccountRepository:
 
 
 def _audit(request: Request, action: str) -> None:
-    audit_ctx: AuditContext | None = getattr(
-        request.state, "audit_context", None
-    )
+    audit_ctx: AuditContext | None = getattr(request.state, "audit_context", None)
     if audit_ctx is not None:
         audit_ctx.action = action
         audit_ctx.entity_type = "account"
@@ -45,9 +43,7 @@ async def create_account(
     ctx: UserContext = Depends(get_user_context),
 ) -> AccountResponse:
     expects_alerts = (
-        body.expects_alerts
-        if body.expects_alerts is not None
-        else body.type in _ALERT_TYPES
+        body.expects_alerts if body.expects_alerts is not None else body.type in _ALERT_TYPES
     )
     doc = Account(
         owner_id=ctx.owner_id,
@@ -76,9 +72,7 @@ async def list_accounts(
     type: AccountType | None = None,
     is_active: bool | None = None,
 ) -> list[AccountResponse]:
-    docs = await _repo(ctx).list_accounts(
-        type_filter=type, is_active_filter=is_active
-    )
+    docs = await _repo(ctx).list_accounts(type_filter=type, is_active_filter=is_active)
     return [AccountResponse.from_doc(d) for d in docs]
 
 
@@ -160,11 +154,7 @@ async def patch_account(
         )
 
     # Apply patch to a dict of the current patchable fields.
-    current = {
-        f: getattr(doc, f)
-        for f in _PATCHABLE_FIELDS
-        if getattr(doc, f, None) is not None
-    }
+    current = {f: getattr(doc, f) for f in _PATCHABLE_FIELDS if getattr(doc, f, None) is not None}
     # Serialize Decimal → str for JSON-safe patching.
     for k, v in current.items():
         if hasattr(v, "as_tuple"):
@@ -187,10 +177,7 @@ async def patch_account(
     try:
         validated = AccountUpdate.model_validate(patched)
     except ValidationError as exc:
-        errors = [
-            {k: v for k, v in e.items() if k != "ctx"}
-            for e in exc.errors()
-        ]
+        errors = [{k: v for k, v in e.items() if k != "ctx"} for e in exc.errors()]
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=errors,
@@ -208,10 +195,7 @@ async def patch_account(
     except AccountNameExistsError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Account with name '{updates.get('name', '')}' "
-                "already exists"
-            ),
+            detail=(f"Account with name '{updates.get('name', '')}' " "already exists"),
         ) from None
 
     if updated is None:

@@ -39,18 +39,14 @@ def mock_db():
 
 @pytest.mark.asyncio
 async def test_list_accounts_requires_auth(mock_db) -> None:
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/api/accounts")
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 async def test_create_account_requires_auth(mock_db) -> None:
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/api/accounts",
             json={"name": "X", "type": "cash", "currency": "USD"},
@@ -62,9 +58,7 @@ async def test_create_account_requires_auth(mock_db) -> None:
 # Integration tests — require live MongoDB
 # ---------------------------------------------------------------------------
 
-_TEST_URI = os.environ.get(
-    "TSR_MONGODB_URI", "mongodb://localhost:27017/treasure_test"
-)
+_TEST_URI = os.environ.get("TSR_MONGODB_URI", "mongodb://localhost:27017/treasure_test")
 
 
 @pytest.fixture
@@ -88,9 +82,7 @@ async def client(seed_db, audit_db):
         patch("app.core.db.disconnect", new_callable=AsyncMock),
         patch("app.main.resolve_encryption_key"),
     ):
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="https://test"
-        ) as http:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as http:
             resp = await http.post(
                 "/api/auth/login",
                 data={
@@ -136,9 +128,7 @@ class TestCreateAccount:
         assert "created_at" in body
         assert "updated_at" in body
 
-    async def test_balance_starts_at_initial_balance(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_balance_starts_at_initial_balance(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={
@@ -153,16 +143,12 @@ class TestCreateAccount:
         assert Decimal(body["initial_balance"]) == Decimal("500.50")
         assert Decimal(body["balance"]) == Decimal("500.50")
 
-    async def test_expects_alerts_defaults_true_for_bank(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_expects_alerts_defaults_true_for_bank(self, client: AsyncClient) -> None:
         resp = await client.post("/api/accounts", json=CHECKING)
         assert resp.status_code == 201
         assert resp.json()["expects_alerts"] is True
 
-    async def test_expects_alerts_defaults_false_for_cash(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_expects_alerts_defaults_false_for_cash(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={"name": "Wallet", "type": "cash", "currency": "USD"},
@@ -170,9 +156,7 @@ class TestCreateAccount:
         assert resp.status_code == 201
         assert resp.json()["expects_alerts"] is False
 
-    async def test_expects_alerts_override(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_expects_alerts_override(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={
@@ -185,9 +169,7 @@ class TestCreateAccount:
         assert resp.status_code == 201
         assert resp.json()["expects_alerts"] is False
 
-    async def test_duplicate_name_returns_409(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_duplicate_name_returns_409(self, client: AsyncClient) -> None:
         resp1 = await client.post("/api/accounts", json=CHECKING)
         assert resp1.status_code == 201
         resp2 = await client.post("/api/accounts", json=CHECKING)
@@ -255,9 +237,7 @@ class TestCreateAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_invalid_initial_balance_type(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_invalid_initial_balance_type(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={
@@ -269,18 +249,14 @@ class TestCreateAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_empty_name_is_accepted(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_empty_name_is_accepted(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={"name": "", "type": "cash", "currency": "USD"},
         )
         assert resp.status_code == 201
 
-    async def test_extra_unknown_fields_ignored(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_extra_unknown_fields_ignored(self, client: AsyncClient) -> None:
         resp = await client.post(
             "/api/accounts",
             json={
@@ -327,24 +303,16 @@ class TestListAccounts:
         acct_id = resp.json()["id"]
         await client.delete(f"/api/accounts/{acct_id}")
 
-        resp = await client.get(
-            "/api/accounts", params={"is_active": "true"}
-        )
+        resp = await client.get("/api/accounts", params={"is_active": "true"})
         assert resp.status_code == 200
         assert all(a["is_active"] for a in resp.json())
 
-        resp = await client.get(
-            "/api/accounts", params={"is_active": "false"}
-        )
+        resp = await client.get("/api/accounts", params={"is_active": "false"})
         assert resp.status_code == 200
         assert all(not a["is_active"] for a in resp.json())
 
-    async def test_filter_invalid_type_returns_422(
-        self, client: AsyncClient
-    ) -> None:
-        resp = await client.get(
-            "/api/accounts", params={"type": "nonexistent"}
-        )
+    async def test_filter_invalid_type_returns_422(self, client: AsyncClient) -> None:
+        resp = await client.get("/api/accounts", params={"type": "nonexistent"})
         assert resp.status_code == 422
 
 
@@ -361,15 +329,11 @@ class TestGetAccount:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Checking"
 
-    async def test_get_nonexistent_returns_404(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_get_nonexistent_returns_404(self, client: AsyncClient) -> None:
         resp = await client.get(f"/api/accounts/{NONEXISTENT_ID}")
         assert resp.status_code == 404
 
-    async def test_get_invalid_id_format_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_get_invalid_id_format_returns_422(self, client: AsyncClient) -> None:
         resp = await client.get("/api/accounts/not-an-objectid")
         assert resp.status_code == 422
 
@@ -402,9 +366,7 @@ class TestPatchAccount:
         assert resp.status_code == 200
         assert Decimal(resp.json()["balance"]) == Decimal("999.99")
 
-    async def test_replace_preserves_unpatched_fields(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_replace_preserves_unpatched_fields(self, client: AsyncClient) -> None:
         create_resp = await client.post(
             "/api/accounts",
             json={
@@ -428,9 +390,7 @@ class TestPatchAccount:
         assert Decimal(body["initial_balance"]) == Decimal("100")
         assert body["type"] == "bank_account"
 
-    async def test_replace_multiple_fields(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_replace_multiple_fields(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await _json_patch(
@@ -461,9 +421,7 @@ class TestPatchAccount:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Tested"
 
-    async def test_test_op_fails_returns_409(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_test_op_fails_returns_409(self, client: AsyncClient) -> None:
         """RFC 6902 'test' op — 409 when current value doesn't match."""
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
@@ -477,9 +435,7 @@ class TestPatchAccount:
         )
         assert resp.status_code == 409
 
-    async def test_also_accepts_application_json(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_also_accepts_application_json(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await client.patch(
@@ -491,9 +447,7 @@ class TestPatchAccount:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Via JSON"
 
-    async def test_patch_nonexistent_returns_404(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_patch_nonexistent_returns_404(self, client: AsyncClient) -> None:
         resp = await _json_patch(
             client,
             f"/api/accounts/{NONEXISTENT_ID}",
@@ -501,9 +455,7 @@ class TestPatchAccount:
         )
         assert resp.status_code == 404
 
-    async def test_patch_duplicate_name_returns_409(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_patch_duplicate_name_returns_409(self, client: AsyncClient) -> None:
         await client.post("/api/accounts", json=CHECKING)
         resp2 = await client.post("/api/accounts", json=SAVINGS)
         acct_id = resp2.json()["id"]
@@ -522,19 +474,13 @@ class TestPatchAccount:
 
 
 class TestPatchAccountValidation:
-    async def test_empty_patch_array_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_empty_patch_array_returns_422(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
-        resp = await _json_patch(
-            client, f"/api/accounts/{acct_id}", []
-        )
+        resp = await _json_patch(client, f"/api/accounts/{acct_id}", [])
         assert resp.status_code == 422
 
-    async def test_currency_not_patchable_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_currency_not_patchable_returns_422(self, client: AsyncClient) -> None:
         """Currency is immutable after creation."""
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
@@ -546,9 +492,7 @@ class TestPatchAccountValidation:
         assert resp.status_code == 422
         assert "not patchable" in resp.json()["detail"].lower()
 
-    async def test_invalid_balance_type_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_invalid_balance_type_returns_422(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await _json_patch(
@@ -558,9 +502,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_malformed_json_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_malformed_json_returns_422(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await client.patch(
@@ -570,9 +512,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_object_body_instead_of_array_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_object_body_instead_of_array_returns_422(self, client: AsyncClient) -> None:
         """Patch document must be a JSON array, not an object."""
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
@@ -583,9 +523,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_non_patchable_field_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_non_patchable_field_returns_422(self, client: AsyncClient) -> None:
         """Cannot patch owner_id, type, or other immutable fields."""
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
@@ -596,9 +534,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_invalid_id_format_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_invalid_id_format_returns_422(self, client: AsyncClient) -> None:
         resp = await _json_patch(
             client,
             "/api/accounts/not-valid",
@@ -606,9 +542,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_unsupported_content_type_returns_415(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_unsupported_content_type_returns_415(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await client.patch(
@@ -618,9 +552,7 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 415
 
-    async def test_missing_op_field_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_missing_op_field_returns_422(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
         resp = await _json_patch(
@@ -630,14 +562,10 @@ class TestPatchAccountValidation:
         )
         assert resp.status_code == 422
 
-    async def test_put_method_not_allowed(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_put_method_not_allowed(self, client: AsyncClient) -> None:
         create_resp = await client.post("/api/accounts", json=CHECKING)
         acct_id = create_resp.json()["id"]
-        resp = await client.put(
-            f"/api/accounts/{acct_id}", json={"name": "X"}
-        )
+        resp = await client.put(f"/api/accounts/{acct_id}", json={"name": "X"})
         assert resp.status_code == 405
 
 
@@ -658,15 +586,11 @@ class TestDeleteAccount:
         assert get_resp.status_code == 200
         assert get_resp.json()["is_active"] is False
 
-    async def test_delete_nonexistent_returns_404(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_delete_nonexistent_returns_404(self, client: AsyncClient) -> None:
         resp = await client.delete(f"/api/accounts/{NONEXISTENT_ID}")
         assert resp.status_code == 404
 
-    async def test_delete_invalid_id_format_returns_422(
-        self, client: AsyncClient
-    ) -> None:
+    async def test_delete_invalid_id_format_returns_422(self, client: AsyncClient) -> None:
         resp = await client.delete("/api/accounts/not-valid")
         assert resp.status_code == 422
 
@@ -677,12 +601,8 @@ class TestDeleteAccount:
 
 
 class TestApiKeyAuth:
-    async def test_api_key_works_for_accounts(
-        self, client: AsyncClient
-    ) -> None:
-        async with AsyncClient(
-            transport=ASGITransport(app=app), base_url="https://test"
-        ) as http:
+    async def test_api_key_works_for_accounts(self, client: AsyncClient) -> None:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="https://test") as http:
             resp = await http.get(
                 "/api/accounts",
                 headers={"X-API-Key": ADMIN_API_KEY},
