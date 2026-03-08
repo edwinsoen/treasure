@@ -21,6 +21,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --no-dev --no-install-project
 # Copy source, then install the project package (creates entry point scripts)
 COPY app ./app
+COPY data ./data
 COPY gunicorn.conf.py ./
 RUN uv sync --no-dev
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \

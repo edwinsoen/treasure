@@ -1,0 +1,157 @@
+[
+  {
+    "name": "Groceries",
+    "type": "expense",
+    "sort_order": 0,
+    "children": [
+      {"name": "Supermarket", "sort_order": 0},
+      {"name": "Farmers Market", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Dining Out",
+    "type": "expense",
+    "sort_order": 1,
+    "children": [
+      {"name": "Restaurants", "sort_order": 0},
+      {"name": "Food Deliveries", "sort_order": 1},
+      {"name": "Coffee & Cafes", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Transportation",
+    "type": "expense",
+    "sort_order": 2,
+    "children": [
+      {"name": "Gas & Fuel", "sort_order": 0},
+      {"name": "Public Transit", "sort_order": 1},
+      {"name": "Ride Share", "sort_order": 2},
+      {"name": "Parking & Tolls", "sort_order": 3}
+    ]
+  },
+  {
+    "name": "Housing",
+    "type": "expense",
+    "sort_order": 3,
+    "children": [
+      {"name": "Rent", "sort_order": 0},
+      {"name": "Mortgage", "sort_order": 1},
+      {"name": "Home Maintenance", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Utilities",
+    "type": "expense",
+    "sort_order": 4,
+    "children": [
+      {"name": "Electricity", "sort_order": 0},
+      {"name": "Water", "sort_order": 1},
+      {"name": "Internet & Phone", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Healthcare",
+    "type": "expense",
+    "sort_order": 5,
+    "children": [
+      {"name": "Doctor Visits", "sort_order": 0},
+      {"name": "Pharmacy", "sort_order": 1},
+      {"name": "Insurance Premiums", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Entertainment",
+    "type": "expense",
+    "sort_order": 6,
+    "children": [
+      {"name": "Streaming Services", "sort_order": 0},
+      {"name": "Events & Activities", "sort_order": 1},
+      {"name": "Hobbies", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Shopping",
+    "type": "expense",
+    "sort_order": 7,
+    "children": [
+      {"name": "Clothing", "sort_order": 0},
+      {"name": "Electronics", "sort_order": 1},
+      {"name": "Home & Garden", "sort_order": 2}
+    ]
+  },
+  {
+    "name": "Subscriptions",
+    "type": "expense",
+    "sort_order": 8,
+    "children": [
+      {"name": "Software & Apps", "sort_order": 0},
+      {"name": "Memberships", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Personal Care",
+    "type": "expense",
+    "sort_order": 9,
+    "children": [
+      {"name": "Haircuts & Grooming", "sort_order": 0},
+      {"name": "Gym & Fitness", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Salary",
+    "type": "income",
+    "sort_order": 0,
+    "children": [
+      {"name": "Base Pay", "sort_order": 0},
+      {"name": "Bonuses", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Freelance",
+    "type": "income",
+    "sort_order": 1,
+    "children": []
+  },
+  {
+    "name": "Interest & Dividends",
+    "type": "income",
+    "sort_order": 2,
+    "children": [
+      {"name": "Savings Interest", "sort_order": 0},
+      {"name": "Stock Dividends", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Stocks & Funds",
+    "type": "investment",
+    "sort_order": 0,
+    "children": [
+      {"name": "Individual Stocks", "sort_order": 0},
+      {"name": "Index Funds", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Retirement",
+    "type": "investment",
+    "sort_order": 1,
+    "children": [
+      {"name": "401k", "sort_order": 0},
+      {"name": "IRA", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Charitable Donations",
+    "type": "giving",
+    "sort_order": 0,
+    "children": [
+      {"name": "Nonprofits", "sort_order": 0},
+      {"name": "Community", "sort_order": 1}
+    ]
+  },
+  {
+    "name": "Tithes & Offerings",
+    "type": "giving",
+    "sort_order": 1,
+    "children": []
+  }
+]

@@ -46,12 +46,14 @@ def on_starting(server: object) -> None:  # noqa: ARG001
     from app.core.config import get_settings, resolve_encryption_key
     from app.core.db import connect, disconnect, get_db_name
     from app.models.account import Account
+    from app.models.category import Category
     from app.models.user import AccessToken, User
 
     async def _init() -> None:
         settings = get_settings()
         resolve_encryption_key(settings)
-        await connect(settings.mongodb_uri.get_secret_value(), [User, AccessToken, Account])
+        models = [User, AccessToken, Account, Category]
+        await connect(settings.mongodb_uri.get_secret_value(), models)
 
         mongodb_uri = settings.mongodb_uri.get_secret_value()
         audit_uri = (
@@ -64,6 +66,29 @@ def on_starting(server: object) -> None:  # noqa: ARG001
             get_db_name(audit_uri),
             retention_days=settings.audit_retention_days,
         )
+
+        # Seed default categories once in the master process.
+        import structlog
+
+        from app.cli.seed_categories import seed_default_categories
+
+        _logger = structlog.get_logger()
+        try:
+            user = await User.find_one()
+            if user is None:
+                _logger.info("Category seeding skipped — no user exists yet")
+            else:
+                assert user.id is not None
+                count = await seed_default_categories(owner_id=user.id, created_by=user.id)
+                if count:
+                    _logger.info("Seeded default categories", count=count)
+        except Exception as exc:
+            _logger.warning("Category seeding failed", error=str(exc))
+
+        # Mark as done so workers skip the lifespan seed path.
+        import app.main
+
+        app.main._categories_seeded = True
 
         await close_audit_db()
         await disconnect()

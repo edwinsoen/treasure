@@ -26,6 +26,7 @@ from app.audit.service import close_audit_db, init_audit_db
 from app.audit.service import log as audit_log
 from app.core.config import get_settings, resolve_encryption_key
 from app.core.db import get_db_name
+from app.models.category import Category
 from app.models.user import AccessToken, User
 
 logger = structlog.get_logger()
@@ -52,7 +53,7 @@ async def _run() -> None:
     try:
         await init_beanie(
             database=client[db_name],
-            document_models=[User, AccessToken],
+            document_models=[User, AccessToken, Category],
         )
         await init_audit_db(
             audit_uri,
@@ -111,6 +112,13 @@ async def _run() -> None:
 
         # Ensure the encryption key file exists
         resolve_encryption_key(settings)
+
+        # Seed default categories for the new user.
+        from app.cli.seed_categories import seed_default_categories
+
+        cat_count = await seed_default_categories(owner_id=user.id, created_by=user.id)
+        if cat_count:
+            print(f"Default categories seeded ({cat_count} categories).")
 
         print(f"\nUser created: {user.email} (id: {user.id})")
         if raw_api_key:

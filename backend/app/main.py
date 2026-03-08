@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.accounts import router as accounts_router
 from app.api.audit_log import router as audit_log_router
+from app.api.categories import router as categories_router
 from app.api.health import router as health_router
 from app.audit.middleware import AuditLogMiddleware
 from app.audit.service import close_audit_db, init_audit_db
@@ -20,11 +21,17 @@ from app.auth.schemas import UserRead, UserUpdate
 from app.core.config import get_settings, resolve_encryption_key
 from app.core.db import connect, disconnect, get_db_name
 from app.models.account import Account
+from app.models.category import Category
 from app.models.user import AccessToken, User
 
 logger = structlog.get_logger()
 
-_DOCUMENT_MODELS = [User, AccessToken, Account]
+_DOCUMENT_MODELS = [User, AccessToken, Account, Category]
+
+# Set to True after category seeding has been attempted (success or skip).
+# With gunicorn preload_app=True, on_starting seeds in the master process
+# and sets this flag; workers inherit it via fork and skip the lifespan seed.
+_categories_seeded: bool = False
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
@@ -68,6 +75,28 @@ async def lifespan(app: FastAPI):
         )
     except Exception as exc:
         logger.warning("Audit database unavailable at startup", error=str(exc))
+
+    # Seed default categories if none exist for any user.
+    # Under gunicorn, on_starting already handled this in the master process
+    # and set _categories_seeded=True; workers inherit the flag via fork.
+    global _categories_seeded
+    if not _categories_seeded:
+        try:
+            from app.cli.seed_categories import seed_default_categories
+
+            user = await User.find_one()
+            if user is None:
+                logger.info("Category seeding skipped — no user exists yet")
+            else:
+                assert user.id is not None
+                count = await seed_default_categories(owner_id=user.id, created_by=user.id)
+                if count:
+                    logger.info("Seeded default categories", count=count)
+                else:
+                    logger.debug("Categories already exist, skipping seed")
+        except Exception as exc:
+            logger.warning("Category seeding failed", error=str(exc))
+        _categories_seeded = True
 
     logger.info("Starting Treasure", env=settings.app_env, log_level=settings.log_level)
     yield
@@ -114,6 +143,7 @@ app.include_router(
     tags=["users"],
 )
 app.include_router(accounts_router, prefix="/api", tags=["accounts"])
+app.include_router(categories_router, prefix="/api", tags=["categories"])
 app.include_router(audit_log_router, prefix="/api", tags=["audit"])
 
 
